@@ -16,10 +16,87 @@ def init_db():
 
 # Настройка страницы
 st.set_page_config(
-    page_title="Сравнитель ТТЗ и КД",
+    page_title="Сравнить ТТЗ и КД",
     layout="wide",
     initial_sidebar_state="collapsed"
 )
+
+st.markdown(
+    """
+    <style>
+      /* ========== СПОКОЙНЫЙ КЛАССИЧЕСКИЙ САЙДБАР ========== */
+
+      section[data-testid="stSidebar"] {
+        border-right: 1px solid rgba(255,255,255,0.08);
+      }
+
+      section[data-testid="stSidebar"] > div {
+        background: #111827; /* спокойный тёмный */
+      }
+
+      /* Заголовки */
+      section[data-testid="stSidebar"] h1,
+      section[data-testid="stSidebar"] h2,
+      section[data-testid="stSidebar"] h3 {
+        font-weight: 600;
+        letter-spacing: 0.3px;
+      }
+
+      /* Кнопки в сайдбаре */
+      section[data-testid="stSidebar"] button {
+        border-radius: 8px;
+      }
+
+      /* Убираем яркую рамку истории */
+      .history-cta {
+        border: 1px solid rgba(255,255,255,0.08);
+        background: rgba(255,255,255,0.02);
+        border-radius: 10px;
+        padding: 10px;
+        margin-top: 6px;
+        margin-bottom: 10px;
+      }
+
+      .history-cta .badge {
+        background: rgba(255,255,255,0.08);
+        border: none;
+        font-weight: 600;
+      }
+
+      .history-cta .hint {
+        opacity: 0.6;
+        font-size: 12px;
+      }
+
+      /* ========== ДЕЛАЕМ ШТОРКУ (>>) ЗАМЕТНЕЕ ========== */
+
+      button[data-testid="collapsedControl"] {
+        background: rgba(255,255,255,0.08) !important;
+        border-radius: 8px !important;
+        width: 38px !important;
+        height: 38px !important;
+      }
+
+      button[data-testid="collapsedControl"]:hover {
+        background: rgba(255,255,255,0.15) !important;
+      }
+
+      /* увеличим иконку стрелки */
+      button[data-testid="collapsedControl"] svg {
+        transform: scale(1.3);
+      }
+      
+      @keyframes pulse {
+        0% { box-shadow: 0 0 0 0 rgba(255,255,255,0.2); }
+        70% { box-shadow: 0 0 0 8px rgba(255,255,255,0); }
+        100% { box-shadow: 0 0 0 0 rgba(255,255,255,0); }
+      }  
+
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
 
 # Инициализация сессии
 if 'db' not in st.session_state:
@@ -224,14 +301,25 @@ def show_main_page():
                 # Сохраняем результаты в сессию для отображения
                 st.session_state.last_results = df
                 st.session_state.last_comparison_id = comparison_id
+                st.session_state.page = "history"
+                st.rerun()
 
             except Exception as e:
                 status.update(label="❌ Ошибка при обработке", state="error")
                 st.error(f"Произошла ошибка: {str(e)}")
 
     # Отображение результатов, если они есть
-    if 'last_results' in st.session_state:
-        display_results(st.session_state.last_results, st.session_state.last_comparison_id)
+    if (
+            st.session_state.page == "main"
+            and 'last_results' in st.session_state
+            and 'last_comparison_id' in st.session_state
+    ):
+        display_results(
+            st.session_state.last_results,
+            st.session_state.last_comparison_id
+        )
+
+
 
 def show_history_page():
     """Отображает страницу с историей загрузок"""
@@ -311,13 +399,36 @@ with st.sidebar:
 
     # Навигация
     st.header("Навигация")
+
+    # обычная кнопка главной страницы
     if st.button("📊 Основная страница", use_container_width=True):
         st.session_state.page = "main"
         st.rerun()
 
-    if st.button("📜 История загрузок", use_container_width=True):
+    # количество записей истории (достаем быстро из БД)
+    try:
+        history_count = len(st.session_state.db.get_all_comparisons())
+    except Exception:
+        history_count = 0
+
+    # АКЦЕНТНЫЙ БЛОК ИСТОРИИ
+    st.markdown(
+        f"""
+        <div class="history-cta">
+          <div style="font-weight:800; font-size:16px;">
+            📜 История загрузок
+            <span class="badge">{history_count}</span>
+          </div>
+          <div class="hint">Тут все предыдущие сравнения, результаты и комментарии.</div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    if st.button("➡️ Открыть историю", use_container_width=True, type="primary"):
         st.session_state.page = "history"
         st.rerun()
+
 
 # Отображение выбранной страницы
 if st.session_state.page == "main":
