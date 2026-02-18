@@ -1,4 +1,31 @@
+cat > .gitignore << 'EOF'
+# Виртуальное окружение
+venv/
+env/
+ENV/
+
+# База данных
+*.db
+*.db-journal
+
+# Python кэш
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
+
+# Streamlit
+.streamlit/
+
+# Редакторы
+.vscode/
 .idea/
-.env
+
+# macOS
+.DS_Store
+
+# Временные файлы
+*.log
+*.tmp
+*.temp
+EOF
